@@ -279,5 +279,7 @@ ssh "$ROUTER" "rm -rf '$REMOTE_DIR' && mkdir -p '$REMOTE_DIR'"
 scp -r "$BUILD_DIR"/. "${ROUTER}:${REMOTE_DIR}/"
 
 echo
-echo "Done. On the router, run:"
+echo "Done. The bundle was uploaded to the router, not to this Mac."
+echo "Next run these commands:"
+echo "  ssh ${ROUTER}"
 echo "  sh ${REMOTE_DIR}/install_gl_mt3000_offline_bundle.sh"

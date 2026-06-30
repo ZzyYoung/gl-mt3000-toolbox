@@ -14,7 +14,10 @@ green() { printf "\033[32m\033[01m%s\033[0m\n" "$1"; }
 yellow() { printf "\033[33m\033[01m%s\033[0m\n" "$1"; }
 
 if ! command -v opkg >/dev/null 2>&1; then
-  red "未找到 opkg，请在 OpenWrt 路由器上运行。"
+  red "opkg was not found. Run this installer on the OpenWrt router, not on this Mac."
+  echo "Example:"
+  echo "  ssh root@192.168.8.1"
+  echo "  sh ${BUNDLE_DIR}/install_gl_mt3000_offline_bundle.sh"
   exit 1
 fi
 
