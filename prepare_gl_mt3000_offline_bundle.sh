@@ -11,6 +11,8 @@ BUILD_DIR="/tmp/gl-mt3000-toolbox-bundle"
 ARCH="aarch64_cortex-a53"
 OPENWRT_SERIES="21.02"
 SOURCEFORGE_BASE="https://sourceforge.net/projects/openwrt-passwall-build/files/releases/packages-${OPENWRT_SERIES}/${ARCH}"
+GEOVIEW_FALLBACK_SERIES="23.05"
+GEOVIEW_FALLBACK_BASE="https://sourceforge.net/projects/openwrt-passwall-build/files/releases/packages-${GEOVIEW_FALLBACK_SERIES}/${ARCH}"
 
 WITH_OPTIONAL=0
 UPLOAD_ONLY=0
@@ -158,14 +160,22 @@ download() {
   curl -fL --retry 3 --retry-delay 2 -o "$out" "$url"
 }
 
-sf_latest_file() {
-  subdir="$1"
-  prefix="$2"
-  html="$BUILD_DIR/index-${subdir}.html"
-  url="${SOURCEFORGE_BASE}/${subdir}/"
+sf_latest_file_from_base() {
+  base="$1"
+  subdir="$2"
+  prefix="$3"
+  cache_suffix="$(printf '%s-%s' "$base" "$subdir" | sed 's#[^A-Za-z0-9._-]#_#g')"
+  html="$BUILD_DIR/index-${cache_suffix}.html"
+  url="${base}/${subdir}/"
 
   [ -s "$html" ] || curl -fsSL "$url" -o "$html"
   grep -oE "${prefix}_[A-Za-z0-9._+~:-]+_(all|${ARCH})\\.ipk" "$html" | sort -u | tail -n 1
+}
+
+sf_latest_file() {
+  subdir="$1"
+  prefix="$2"
+  sf_latest_file_from_base "$SOURCEFORGE_BASE" "$subdir" "$prefix"
 }
 
 download_sf_pkg() {
@@ -181,6 +191,34 @@ download_sf_pkg() {
 
   mkdir -p "$dest_dir"
   download "${SOURCEFORGE_BASE}/${subdir}/${file}/download" "$dest_dir/$file"
+}
+
+download_sf_pkg_from_base() {
+  base="$1"
+  subdir="$2"
+  prefix="$3"
+  dest_dir="${4:-$BUILD_DIR/ipk/common}"
+  file="$(sf_latest_file_from_base "$base" "$subdir" "$prefix" || true)"
+
+  if [ -z "$file" ]; then
+    echo "[skip] cannot find ${prefix}_*.ipk in ${base}/${subdir}"
+    return 1
+  fi
+
+  mkdir -p "$dest_dir"
+  download "${base}/${subdir}/${file}/download" "$dest_dir/$file"
+}
+
+download_geoview() {
+  if download_sf_pkg_from_base "$SOURCEFORGE_BASE" "passwall_packages" "geoview" "$BUILD_DIR/ipk/common"; then
+    return 0
+  fi
+
+  echo "[fallback] geoview is not in packages-${OPENWRT_SERIES}; trying packages-${GEOVIEW_FALLBACK_SERIES}"
+  download_sf_pkg_from_base "$GEOVIEW_FALLBACK_BASE" "passwall_packages" "geoview" "$BUILD_DIR/ipk/common" || {
+    echo "[skip] cannot find geoview fallback package"
+    return 0
+  }
 }
 
 download_proxy_cores() {
@@ -229,6 +267,7 @@ download_passwall_packages() {
 
   download_sf_pkg "passwall_packages" "v2ray-geoip"
   download_sf_pkg "passwall_packages" "v2ray-geosite"
+  download_geoview
   download_sf_pkg "passwall_packages" "chinadns-ng"
   download_sf_pkg "passwall_packages" "dns2socks"
   download_sf_pkg "passwall_packages" "microsocks"

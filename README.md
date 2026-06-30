@@ -72,8 +72,8 @@ https://sourceforge.net/projects/openwrt-passwall-build/files/releases/packages-
 ```
 
 It installs the selected LuCI package, Chinese translation, common DNS helpers,
-geo data, `microsocks`, `tcping`, and `ipt2socks`. SSR, simple-obfs, and
-NaiveProxy can be included with `--with-optional`.
+geo data, `geoview`, `microsocks`, `tcping`, and `ipt2socks`. SSR,
+simple-obfs, and NaiveProxy can be included with `--with-optional`.
 
 ## Proxy cores and data
 
@@ -83,6 +83,8 @@ The offline Mac script resolves latest releases at runtime:
 - Xray-core official `linux-arm64-v8a`
 - Hysteria official `hysteria-linux-arm64`
 
-GeoIP and Geosite are installed as PassWall packages. `GeoView` is not included
-as a separate package because it is not published in the current PassWall
-`aarch64_cortex-a53` package directory.
+GeoIP and Geosite are installed as PassWall packages. PassWall 2 also depends
+on `geoview`; when it is missing from the OpenWrt 21.02 package directory, the
+offline script downloads the same-architecture fallback from the OpenWrt 23.05
+PassWall package directory and copies it to the router with the rest of the
+offline bundle.
