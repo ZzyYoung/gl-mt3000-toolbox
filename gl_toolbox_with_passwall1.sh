@@ -3,7 +3,7 @@ set -u
 
 # GL-iNet toolbox launcher with a PassWall 1 installer for GL-MT3000.
 # Intended one-line usage:
-#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ZzyYoung/openwrt-scripts-toolbox/passwall-toolbox/gl_toolbox_with_passwall1.sh)"
+#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ZzyYoung/gl-mt3000-toolbox/passwall-toolbox/gl_toolbox_with_passwall1.sh)"
 
 HTTP_HOST="https://cafe.cpolar.cn/wkdaily/gl/raw/branch/main"
 SCRIPT_DIR="/tmp/gl-scripts"

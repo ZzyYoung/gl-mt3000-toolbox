@@ -8,7 +8,7 @@ PassWall 1 installer for GL-MT3000 / aarch64_cortex-a53.
 Run this on the OpenWrt router:
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ZzyYoung/openwrt-scripts-toolbox/passwall-toolbox/gl_toolbox_with_passwall1.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ZzyYoung/gl-mt3000-toolbox/passwall-toolbox/gl_toolbox_with_passwall1.sh)"
 ```
 
 ## Menu
