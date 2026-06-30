@@ -171,6 +171,7 @@ sf_latest_file() {
 download_sf_pkg() {
   subdir="$1"
   prefix="$2"
+  dest_dir="${3:-$BUILD_DIR/ipk/common}"
   file="$(sf_latest_file "$subdir" "$prefix" || true)"
 
   if [ -z "$file" ]; then
@@ -178,7 +179,8 @@ download_sf_pkg() {
     return 0
   fi
 
-  download "${SOURCEFORGE_BASE}/${subdir}/${file}/download" "$BUILD_DIR/ipk/$file"
+  mkdir -p "$dest_dir"
+  download "${SOURCEFORGE_BASE}/${subdir}/${file}/download" "$dest_dir/$file"
 }
 
 download_proxy_cores() {
@@ -218,10 +220,12 @@ EOF
 }
 
 download_passwall_packages() {
-  mkdir -p "$BUILD_DIR/ipk"
+  mkdir -p "$BUILD_DIR/ipk/common" "$BUILD_DIR/ipk/passwall1" "$BUILD_DIR/ipk/passwall2"
 
-  download_sf_pkg "passwall_luci" "luci-app-passwall"
-  download_sf_pkg "passwall_luci" "luci-i18n-passwall-zh-cn"
+  download_sf_pkg "passwall_luci" "luci-app-passwall" "$BUILD_DIR/ipk/passwall1"
+  download_sf_pkg "passwall_luci" "luci-i18n-passwall-zh-cn" "$BUILD_DIR/ipk/passwall1"
+  download_sf_pkg "passwall2" "luci-app-passwall2" "$BUILD_DIR/ipk/passwall2"
+  download_sf_pkg "passwall2" "luci-i18n-passwall2-zh-cn" "$BUILD_DIR/ipk/passwall2"
 
   download_sf_pkg "passwall_packages" "v2ray-geoip"
   download_sf_pkg "passwall_packages" "v2ray-geosite"
@@ -250,13 +254,13 @@ write_manifest() {
     cat "$BUILD_DIR/versions.txt" 2>/dev/null || true
     echo
     echo "[ipk]"
-    find "$BUILD_DIR/ipk" -type f -name '*.ipk' -exec basename {} \; | sort
+    find "$BUILD_DIR/ipk" -type f -name '*.ipk' | sed "s#^$BUILD_DIR/ipk/##" | sort
   } > "$BUILD_DIR/manifest.txt"
 }
 
 if [ "$UPLOAD_ONLY" -eq 0 ]; then
   mkdir_clean "$BUILD_DIR"
-  mkdir -p "$BUILD_DIR/ipk" "$BUILD_DIR/cores"
+  mkdir -p "$BUILD_DIR/ipk/common" "$BUILD_DIR/ipk/passwall1" "$BUILD_DIR/ipk/passwall2" "$BUILD_DIR/cores"
 
   download_proxy_cores
   download_passwall_packages

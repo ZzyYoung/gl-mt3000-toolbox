@@ -1,11 +1,11 @@
-# GL-MT3000 toolbox with PassWall 1
+# GL-MT3000 toolbox with PassWall
 
 This repository contains two workflows:
 
 - a recommended offline bundle flow where your Mac downloads the latest files,
   copies them to the router, and the router installs everything locally
 - an online router menu that keeps the original wkdaily GL-iNet toolbox launcher
-  and adds PassWall 1 helpers
+  and adds PassWall helpers
 
 ## Recommended offline flow
 
@@ -22,8 +22,9 @@ ssh root@192.168.8.1
 sh /tmp/gl-mt3000-toolbox/install_gl_mt3000_offline_bundle.sh
 ```
 
-The Mac script downloads the current upstream proxy cores, the current PassWall
-IPK packages for `aarch64_cortex-a53`, and copies everything to:
+The Mac script downloads the current upstream proxy cores, PassWall 1 and
+PassWall 2 LuCI packages, shared dependency IPKs for `aarch64_cortex-a53`, and
+copies everything to:
 
 ```text
 /tmp/gl-mt3000-toolbox
@@ -40,6 +41,11 @@ To also download optional NaiveProxy/SSR/simple-obfs packages:
 ```sh
 sh prepare_gl_mt3000_offline_bundle.sh --with-optional
 ```
+
+The router-side installer asks which PassWall version to install. The default is
+PassWall 2, which is recommended when testing sing-box, Hysteria2, and newer
+Reality-style nodes. It stops/disables the other PassWall service before
+starting the selected one.
 
 ## Online router menu
 
@@ -59,15 +65,15 @@ Menu:
 
 ## PassWall package source
 
-The PassWall 1 installer downloads packages from:
+The offline installer downloads packages from:
 
 ```text
 https://sourceforge.net/projects/openwrt-passwall-build/files/releases/packages-21.02/aarch64_cortex-a53/
 ```
 
-It installs the LuCI package, Chinese translation, common DNS helpers, geo data,
-`microsocks`, `tcping`, and `ipt2socks`. SSR, simple-obfs, and NaiveProxy are
-available from the interactive PassWall menu.
+It installs the selected LuCI package, Chinese translation, common DNS helpers,
+geo data, `microsocks`, `tcping`, and `ipt2socks`. SSR, simple-obfs, and
+NaiveProxy can be included with `--with-optional`.
 
 ## Proxy cores and data
 
