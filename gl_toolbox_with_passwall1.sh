@@ -13,6 +13,13 @@ PASSWALL_OPENWRT_SERIES="21.02"
 PASSWALL_DEST_DIR="/tmp/passwall1-ipk"
 PASSWALL_PROJECT_BASE="https://sourceforge.net/projects/openwrt-passwall-build/files/releases/packages-${PASSWALL_OPENWRT_SERIES}/${PASSWALL_ARCH}"
 
+SING_BOX_VERSION="1.13.14"
+XRAY_VERSION="26.3.27"
+HYSTERIA_VERSION="2.9.3"
+SING_BOX_URL="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/sing-box-${SING_BOX_VERSION}-linux-arm64-musl.tar.gz"
+XRAY_URL="https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-arm64-v8a.zip"
+HYSTERIA_URL="https://github.com/apernet/hysteria/releases/download/app/v${HYSTERIA_VERSION}/hysteria-linux-arm64"
+
 red() { printf "\033[31m\033[01m%s\033[0m\n" "$1"; }
 green() { printf "\033[32m\033[01m%s\033[0m\n" "$1"; }
 yellow() { printf "\033[33m\033[01m%s\033[0m\n" "$1"; }
@@ -188,6 +195,92 @@ passwall_download_latest_pkg() {
   passwall_download_pkg "$subdir" "$file" "$required"
 }
 
+download_file() {
+  url="$1"
+  out="$2"
+
+  echo "[download] $out"
+  if ! wget -O "$out" "$url"; then
+    rm -f "$out"
+    red "下载失败: $url"
+    return 1
+  fi
+}
+
+install_sing_box_core() {
+  tmp="/tmp/sing-box-${SING_BOX_VERSION}-linux-arm64-musl.tar.gz"
+  work_dir="/tmp/sing-box-${SING_BOX_VERSION}-linux-arm64-musl"
+
+  download_file "$SING_BOX_URL" "$tmp" || return 1
+  rm -rf "$work_dir"
+  tar -xzf "$tmp" -C /tmp || return 1
+  cp "$work_dir/sing-box" /usr/bin/sing-box || return 1
+  chmod +x /usr/bin/sing-box
+  /usr/bin/sing-box version || true
+}
+
+install_xray_core() {
+  tmp="/tmp/Xray-linux-arm64-v8a.zip"
+  work_dir="/tmp/xray-core"
+
+  if ! command -v unzip >/dev/null 2>&1; then
+    red "未找到 unzip，无法解压 Xray 官方 zip 包。"
+    echo "请先安装 unzip，或在电脑上解压后手动上传 xray 到 /usr/bin/xray。"
+    return 1
+  fi
+
+  download_file "$XRAY_URL" "$tmp" || return 1
+  rm -rf "$work_dir"
+  mkdir -p "$work_dir"
+  unzip -o "$tmp" -d "$work_dir" >/dev/null || return 1
+  cp "$work_dir/xray" /usr/bin/xray || return 1
+  chmod +x /usr/bin/xray
+  /usr/bin/xray version | head -n 1 || true
+}
+
+install_hysteria_core() {
+  tmp="/tmp/hysteria-linux-arm64"
+
+  download_file "$HYSTERIA_URL" "$tmp" || return 1
+  cp "$tmp" /usr/bin/hysteria || return 1
+  chmod +x /usr/bin/hysteria
+  /usr/bin/hysteria version || true
+}
+
+install_proxy_cores() {
+  passwall_check_environment || return 1
+
+  echo
+  blue "代理核心安装/更新"
+  echo "1. 安装全部: sing-box + Xray + Hysteria"
+  echo "2. 只安装 sing-box"
+  echo "3. 只安装 Xray"
+  echo "4. 只安装 Hysteria"
+  echo
+  read -r -p "请输入选项 [1]: " core_mode
+  core_mode="${core_mode:-1}"
+
+  case "$core_mode" in
+    1)
+      install_sing_box_core || true
+      install_xray_core || true
+      install_hysteria_core || true
+      ;;
+    2) install_sing_box_core ;;
+    3) install_xray_core ;;
+    4) install_hysteria_core ;;
+    *) red "无效选项"; return 1 ;;
+  esac
+
+  echo
+  green "核心安装检查:"
+  command -v sing-box >/dev/null 2>&1 && sing-box version | head -n 1 || yellow "sing-box 未安装"
+  command -v xray >/dev/null 2>&1 && xray version | head -n 1 || yellow "xray 未安装"
+  command -v hysteria >/dev/null 2>&1 && hysteria version | head -n 1 || yellow "hysteria 未安装"
+
+  /etc/init.d/passwall restart 2>/dev/null || true
+}
+
 install_passwall1() {
   passwall_check_environment || return 1
 
@@ -197,6 +290,7 @@ install_passwall1() {
   echo "2. 基础安装 + SSR/simple-obfs"
   echo "3. 基础安装 + NaiveProxy"
   echo "4. 只下载安装包，不安装"
+  echo "5. 安装/更新代理核心: sing-box + Xray + Hysteria"
   echo
   read -r -p "请输入选项 [1]: " mode
   mode="${mode:-1}"
@@ -211,6 +305,7 @@ install_passwall1() {
     2) with_ssr=1; with_obfs=1 ;;
     3) with_naive=1 ;;
     4) install_after_download=0 ;;
+    5) install_proxy_cores; return $? ;;
     *) red "无效选项"; return 1 ;;
   esac
 
@@ -273,6 +368,7 @@ show_main_menu() {
   magenta " A. 自动检测并运行 GL-iNet 工具箱脚本 (推荐)"
   magenta " B. 手动选择 GL-iNet 机型"
   magenta " P. 安装 PassWall 1 for GL-MT3000"
+  magenta " C. 安装/更新 PassWall 代理核心"
   echo
   echo " Q. 退出"
   echo
@@ -285,6 +381,7 @@ while true; do
     a|A) auto_detect_and_run ;;
     b|B) select_model ;;
     p|P) install_passwall1 ;;
+    c|C) install_proxy_cores ;;
     q|Q) echo "退出"; exit 0 ;;
     *) red "无效选项，请重新选择" ;;
   esac
