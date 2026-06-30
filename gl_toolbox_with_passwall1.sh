@@ -199,10 +199,16 @@ download_file() {
   url="$1"
   out="$2"
 
+  if [ -s "$out" ]; then
+    echo "[skip] 已存在 $out"
+    return 0
+  fi
+
   echo "[download] $out"
   if ! wget -O "$out" "$url"; then
     rm -f "$out"
     red "下载失败: $url"
+    yellow "如果路由器不能直连 GitHub，请先在电脑下载该文件，再 scp 到 $out 后重试。"
     return 1
   fi
 }
